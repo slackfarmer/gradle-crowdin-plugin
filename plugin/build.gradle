@@ -9,13 +9,9 @@ buildscript {
     }
 }
 
-plugins {
-    id "com.jfrog.bintray" version "1.1"
-}
-
 apply plugin: 'groovy'
 apply plugin: 'maven'
-apply plugin: "com.gradle.plugin-publish"
+apply plugin: 'maven-publish'
 
 repositories {
     mavenCentral()
@@ -30,91 +26,43 @@ dependencies {
 }
 
 group = 'com.mendhak.gradlecrowdin'
-version = '0.1.0'
+version = '0.0.10'
 project.archivesBaseName='crowdin-plugin'
 project.ext.set("version", version)
 project.description='Gradle plugin for Crowdin.com, download and upload translation files'
 
-
 uploadArchives {
     repositories {
         mavenDeployer {
-            repository(url: uri('repo'))
-            pom.project {
-                name 'Gradle Crowdin Plugin'
-                description project.description
-                url 'https://github.com/mendhak/gradle-crowdin-plugin'
-                licenses {
-                    license {
-                        name 'The MIT License (MIT)'
-                        url 'http://opensource.org/licenses/MIT'
-                        distribution 'repo'
-                    }
-                }
-                scm {
-                    url 'https://github.com/mendhak/gradle-crowdin-plugin.git'
-                }
-                developers{
-                    developer{
-                        id 'mendhak'
-                        name 'Mendhak'
-                        url 'http://mendhak.com'
-
-                    }
-                }
-            }
-        }
-
-    }
-}
-
-bintray {
-    user = BINTRAY_USERNAME
-    key = BINTRAY_APIKEY
-
-    filesSpec {
-        from 'repo'
-        into './'
-        //rename '(.+)\\.(.+)', '$1-suffix.$2'
-    }
-
-    dryRun = false //Whether to run this as dry-run, without deploying
-    publish = true //If version should be auto published after an upload
-
-    pkg {
-        repo = 'maven'
-        name = 'gradle-crowdin-plugin'
-        desc = project.description
-        websiteUrl = 'https://github.com/mendhak/gradle-crowdin-plugin'
-        issueTrackerUrl = 'https://github.com/mendhak/gradle-crowdin-plugin/issues'
-        vcsUrl = 'https://github.com/mendhak/gradle-crowdin-plugin.git'
-        licenses = ['MIT']
-        labels = ['android', 'crowdin', 'plugin', 'gradle']
-        publicDownloadNumbers = true
-
-        version {
-            name = project.version
-            desc = project.description
-            vcsTag = project.version
-            gpg {
-                sign = true //Determines whether to GPG sign the files. The default is false
-                passphrase = BINTRAY_GPGSIGN_PASSPHRASE //Optional. The passphrase for GPG signing'
+/*
+      repository(url: uri('./repo'))
+*/
+            repository(
+                url: "https://${mavenRepoHost}/nexus/content/repositories/releases") {
+                authentication(userName: mavenUser, password: mavenPassword)
             }
         }
     }
 }
 
-pluginBundle {
-    website = 'https://github.com/mendhak/gradle-crowdin-plugin'
-    vcsUrl = 'https://github.com/mendhak/gradle-crowdin-plugin.git'
-    description = project.description
-    tags = ['android', 'crowdin', 'plugin', 'gradle']
-
-    plugins {
-        CrowdinPlugin {
-            id = 'com.mendhak.gradlecrowdin'
-            displayName = project.description
+// You must define the mavenUser/mavenPassword variables in your private
+// $HOME/.gradle/gradle.properties file, like this:
+//   mavenUser: username
+//   mavenPassword: somethingsecret
+publishing {
+    publications {
+        crowdinJar(MavenPublication) {
+            // Use the default artifact created by the java component - a JAR file.
+            from components.java
+            groupId "$group"
+            version = "$version"
         }
     }
-
+    repositories.maven {
+        url "https://${mavenRepoHost}/nexus/content/repositories/buildtools"
+        credentials {
+            username deployMavenUser
+            password deployMavenPassword
+        }
+    }
 }
